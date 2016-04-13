@@ -16,79 +16,9 @@ pacman::p_load('dplyr',
 
 
 
-
-## Simulate 1 Die Roll ####
-
-
-# rolls <- runif(n=100000, min=1, max=6)
-# hist(rolls)
-rolls <- sample.int(6, 10^6, replace=T)
-hist(rolls)
-
-
-rollDie <- function(n=10^6) {
-    sample.int(6, n, replace=T)
-}
-
-
-
-
-## Simulate 3 Dice Rolls ####
-
-
-rolls <- data.frame(one=rollDie(),
-                    two=rollDie(),
-                    three=rollDie()) %>%
-    mutate(total=one+two+three,
-           calculated_single=(total%%6) + 1,
-           calculated_one_in_three=(calculated_single%%3)+1,
-           calculated_double=total - ifelse(calculated_one_in_three==1,
-                                            one,
-                                            ifelse(calculated_one_in_three==2,
-                                                   two,
-                                                   three)))
-
-hist(rolls$calculated_single)
-table(rolls$calculated_single)/nrow(rolls)
-
-hist(rolls$calculated_double)
-table(rolls$calculated_double)/nrow(rolls)
-
-
-table(rolls$calculated_one_in_three)/nrow(rolls)
-
-
-## Simulate 2 Dice Rolls ####
-
-
-rolls <- data.frame(one=rollDie(),
-                    two=rollDie()) %>%
-    mutate(total=one+two)
-
-hist(rolls$total)
-table(rolls$total)/nrow(rolls)
-
-
-
-
-
-
-
-faces <- rep.int(seq_len(6), 3)
-
-combn(faces, 1)
-combn(faces, 2)%>% View
-
-
-
-combn(faces, 1)
-
-
-
-expand.grid(seq_len(6), seq_len(6)) %>%
-    distinct
-
-
+# This function takes an integer number of dice then returns a dataframe which represents all
+# possible unique combinations of that many dice. The dataframe will have ndice columns where each
+# column is a single dice.
 getCombinations <- function(ndice) {
     # Create a list of dice
     dice <- replicate(ndice, seq_len(6), simplify=F)
@@ -102,20 +32,18 @@ getCombinations <- function(ndice) {
     distinct(combinations)
 }
 
-replicate(2, seq_len(6))
 
 
-
-
-## Try to Calculate 1 Die from 3 Roles ####
+## Calculate 1 Die from 3 Roles ####
 
 rolls <- getCombinations(ndice=3) %>%
-    mutate(total = roll1 + roll2 + roll3,
-           calculated_single = (total %% 6) + 1)
+    mutate(total = roll1 + roll2 + roll3, # Get the sum of the rolls
+           calculated_single_die_sum = (total %% 6) + 1) # Mod the sum with 6 and add 1 to get the value of a single die
 
+# Ensure that the calculated distribution matches the expected distribution of one die roll (uniform)
 # Below results in 36 observations for each of the values 1 to 6. This means we have a uniform
 # distrubition, as required.
-table(rolls$calculated_single)
+table(rolls$calculated_single_die_sum)
 
 
 
@@ -159,11 +87,16 @@ labeled_rolls$calculated_two_dice_sum <- labeled_rolls$total -
                   labeled_rolls$label_3))
 
 
-table(labeled_rolls$calculated_two_dice_sum)/nrow(labeled_rolls)
+calculated_two_dice_distribution <- table(labeled_rolls$calculated_two_dice_sum)/nrow(labeled_rolls)
 
+
+## Compare the Distribution of Values from the Two Dice Calculated from Three Compared with an Actual Two Dice Distribution ####
 
 two_dice_sums <- apply(getCombinations(ndice=2), 1, sum)
-table(two_dice_combinations)/nrow(two_dice_combinations)
+
+# two_dice_distribution is the target variable. If we map the 3 dice distribution to this, we have
+# won
+two_dice_distribution <- table(two_dice_sums)/length(two_dice_sums)
 
 
 
