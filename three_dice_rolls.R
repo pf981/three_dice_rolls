@@ -123,74 +123,56 @@ table(rolls$calculated_single)
 ## Try to Calculate 2 Dice from 3 Roles ####
 
 
-# Roll 3 dice. At this point, we can't differentiate between dice, so we can't say "this is dice 1"
-# and "this is dice 2".
+# Get every possible combination of rolls of 3 dice. At this point, we can't differentiate between
+# dice, so we can't say "this is die 1" and "this is die 2".
 rolls <- getCombinations(ndice=3)
 
-# In order to label each dice 1 to 3, we order them and label them smallest to largest. If you have
-# 2 or more dice with the same value, this is not an issue as they are equivalent, so it doesn't
-# matter which one you label to be "smaller".
-# rolls %<>%
-#     rowwise %>%
-#     mutate(label1 = min(roll1, roll2, roll3),
-#            label2 = median(c(roll1, roll2, roll3)),
-#            label3 = max(roll1, roll2, roll3))
-#
-#
-# rolls %<>%
-#     summarise(label1 = min(roll1, roll2, roll3),
-#            label2 = median(c(roll1, roll2, roll3)),
-#            label3 = max(roll1, roll2, roll3))
-#
-# rolls %<>%
-#     mutate(label1 = pmin(roll1, roll2, roll3),
-#            label2 = median(c(roll1, roll2, roll3)),
-#            label3 = pmax(roll1, roll2, roll3))
-# rolls
-#
-#
-# rolls %<>%
-#     mutate_each(label1 = funs(min), roll1, roll2, roll3)
-# rolls
-#
-# rolls %<>%
-#     mutate(label1 = pmin(roll1, roll2, roll3),
-#            label3 = pmax(roll1, roll2, roll3))
-# rolls
-
+# Next, we simply extract the min, median and max of the three dice. Thus assigning a label to each
+# of the dice. If you have 2 or more dice with the same value, this is not an issue as this does not
+# impact our ability to calculate the min, max and median.
 labeled_rolls <- data.frame(label_1=apply(rolls, 1, min),
                             label_2=apply(rolls, 1, median),
                             label_3=apply(rolls, 1, max))
 
+# Now that we have labeled the values, we calculate the total of each roll
+labeled_rolls$total <- apply(rolls, 1, sum)
+
+# We mod the total with 3 and add 1. This will give us a uniform distribution of values between 1
+# and 3
+labeled_rolls$calculated_one_two_or_three <- (labeled_rolls$total %% 3) + 1
+
+# We can check to make sure we have a uniform distribution of 1s, 2s and 3s
+table(labeled_rolls$calculated_one_two_or_three)
 
 
-rolls$label1 <- rowm
+# Now we look at calculated_one_two_or_three and modify the total in the following way. If it is a
+# 1, we exclude the value of the smallest die; if it is a 2, we exclude the value of the median die;
+# and if it is a 3, we exclude the value of the largest die.
+# labeled_rolls$calculated_two_dice_sum <- labeled_rolls$total - labeled_rolls[,labeled_rolls$calculated_one_two_or_three]
+# labeled_rolls$calculated_two_dice_sum <- labeled_rolls$total - labeled_rolls[,paste0('label_', labeled_rolls$calculated_one_two_or_three)]
 
-adply(rolls, 1, sort)
-
-rolls %<>%
-    sort()
-
-
-
-
-rolls <- getCombinations(ndice=3) %>%
-    mutate(total = roll1 + roll2 + roll3,
-           calculated_one_in_three = (total %% 3) + 1)
-
-# Below results in 36 observations for each of the values 1 to 6. This means we have a uniform
-# distrubition, as required.
-table(rolls$calculated_one_in_three)
+labeled_rolls$calculated_two_dice_sum <- labeled_rolls$total -
+    ifelse(labeled_rolls$calculated_one_two_or_three==1,
+           labeled_rolls$label_1,
+           ifelse(labeled_rolls$calculated_one_two_or_three==2,
+                  labeled_rolls$label_2,
+                  labeled_rolls$label_3))
 
 
+table(labeled_rolls$calculated_two_dice_sum)/nrow(labeled_rolls)
+
+
+two_dice_sums <- apply(getCombinations(ndice=2), 1, sum)
+table(two_dice_combinations)/nrow(two_dice_combinations)
 
 
 
 
-by_species <- iris %>% group_by(Species)
-by_species %>% summarise_each(funs(length))
-by_species %>% summarise_each(funs(mean))
-by_species %>% summarise_each(funs(mean), Petal.Width)
+
+
+
+
+
 
 
 
