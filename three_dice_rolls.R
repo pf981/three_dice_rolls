@@ -9,10 +9,14 @@
 if (!require(pacman))
     install.packages(pacman)
 
-pacman::p_load('dplyr',
+pacman::p_load('car',
+               'dplyr',
+               'ggplot2',
+               'magrittr',
                'plyr',
-               'tidyr',
-               'magrittr')
+               'scatterplot3d',
+               'rgl',
+               'tidyr')
 
 
 
@@ -99,10 +103,120 @@ two_dice_sums <- apply(getCombinations(ndice=2), 1, sum)
 two_dice_distribution <- table(two_dice_sums)/length(two_dice_sums)
 
 
+all(calculated_two_dice_distribution==two_dice_distribution)
 
 
 
 
+
+
+## Try to Calculate 2 Dice from 3 Roles - Attempt 2 ####
+
+rolls <- getCombinations(ndice=3) %>%
+    mutate(total = roll1 + roll2 + roll3, # Get the sum of the rolls
+           calculated_two_dice_sum = (total %/% 3)) # Mod the sum with 6 and add 1 to get the value of a single die
+
+table(rolls$calculated_two_dice_sum)/nrow(rolls)
+table(rolls$total)
+
+
+table(two_dice_sums)/length(two_dice_sums)
+
+# Basically, if we remove the FIRST roll, we win. But how do we know the FIRST roll?
+table(rolls$total - rolls$roll1)/nrow(rolls)
+# We can't!
+
+
+
+## Okay, Let's Try Symbolic Regression ####
+
+# min, med, max are the predictors
+# The fit is the euclidian distance between the simulated distribution and the actual distribution
+
+# BUT WHAT WOULD THE DEPENDENT VARIABLE BE??!!
+
+labeled_rolls$comparison_group <- rep(names(two_dice_distribution), two_dice_distribution*nrow(labeled_rolls))
+
+View(labeled_rolls[order(paste0(labeled_rolls$label_1, labeled_rolls$label_2, labeled_rolls$label_3)),])
+
+two_dice_distribution
+
+rep(c(1, 2), c(3, 4))
+
+
+rep(names(two_dice_distribution), two_dice_distribution*nrow(labeled_rolls))
+
+
+# HERE!
+labeled_rolls2 <- labeled_rolls[order(paste0(labeled_rolls$label_1, labeled_rolls$label_2, labeled_rolls$label_3)),]
+
+labeled_rolls2$comparison_group <- rep(names(two_dice_distribution), two_dice_distribution*nrow(labeled_rolls))
+
+View(labeled_rolls2)
+
+
+label_table <- table(paste(labeled_rolls$label_1, labeled_rolls$label_2, labeled_rolls$label_3)) %>%
+    data.frame
+label_table %>% View
+
+label_table$Freq %>% table %>% View
+
+
+table(labeled_rolls2$comparison_group) %>% View
+
+
+
+labeled_rolls2[,1:3]
+
+
+scatterplot3d(x=labeled_rolls2$label_1, y=labeled_rolls2$label_2, z=labeled_rolls2$label_3)
+
+plot3d(wt, disp, mpg, col="red", size=3)
+
+
+
+# Color them based on their frequency
+label_table_plot <- label_table %>%
+    data.frame %>%
+    separate(col=Var1, into=c('label_1', 'label_2', 'label_3'), sep=' ', convert=T)
+
+# FIXME: These colors make 0 sense...
+plot3d(label_table_plot[,1:3], col=label_table_plot$Freq, size=10)
+
+
+# plot3d(labeled_rolls2[,1:3], col=rainbow(nrow(label_table_plot)), size=10)
+
+
+scatter3d(x=label_table_plot$label_1, y=label_table_plot$label_2, z=label_table_plot$label_3, point.col=label_table_plot$Freq)
+scatter3d(x=label_table_plot$label_1, y=label_table_plot$label_2, z=label_table_plot$label_3)
+
+
+
+
+## Plot 2 ####
+
+rolls_two_dice <- getCombinations(ndice=2) %>%
+    mutate(total = roll1 + roll2, # Get the sum of the rolls
+           calculated_two_dice_sum = (total %/% 3),
+           label_1=pmin(roll1, roll2),
+           label_2=pmax(roll1, roll2)) # Mod the sum with 6 and add 1 to get the value of a single die
+
+ggplot(data=rolls_two_dice, aes(x=roll1, y=roll2, col=total)) + geom_point()
+ggplot(data=rolls_two_dice, aes(x=label_1, y=label_2, col=total)) + geom_point() +  scale_colour_gradientn(colours = terrain.colors(10))
+ggplot(data=rolls_two_dice, aes(x=label_1, y=label_2, col=total)) + geom_point() +  scale_colour_gradient(low='green',high='red')
+
+
+rolls_two_dice$total <- rolls_two_dice$total %>% as.factor
+ggplot(data=rolls_two_dice, aes(x=label_1, y=label_2, col=total)) + geom_point(size=8)
+
+
+
+
+two_dice_frequency <- table(paste(rolls_two_dice$label_1, rolls_two_dice$label_2)) %>%
+    data.frame %>%
+    separate(col=Var1, into=c('label_1', 'label_2'), sep=' ', convert=T) %>%
+    mutate(Freq=as.factor(Freq))
+ggplot(data=two_dice_frequency, aes(x=label_1, y=label_2, col=Freq)) + geom_point(size=8)
 
 
 
